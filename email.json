@@ -1,0 +1,117 @@
+{
+    "emails": {
+        "000100": {
+            "yesterday": null,
+            "today": null
+        },
+        "000636": {
+            "yesterday": null,
+            "today": null
+        },
+        "601020": {
+            "yesterday": null,
+            "today": null
+        },
+        "600827": {
+            "yesterday": null,
+            "today": null
+        },
+        "002594": {
+            "yesterday": null,
+            "today": null
+        },
+        "600552": {
+            "yesterday": null,
+            "today": null
+        },
+        "600096": {
+            "yesterday": null,
+            "today": null
+        },
+        "300676": {
+            "yesterday": null,
+            "today": null
+        },
+        "300896": {
+            "yesterday": null,
+            "today": null
+        },
+        "002006": {
+            "yesterday": null,
+            "today": null
+        },
+        "sz000636": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sz000636",
+                "name": "风华高科",
+                "price": 25.74,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：风华高科\n股票代码：sz000636\n最新价格：25.74\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:16:54",
+                "time": "2026-02-26 09:16:56"
+            },
+            "today": null
+        },
+        "sz002594": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sz002594",
+                "name": "比亚迪",
+                "price": 91.45,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：比亚迪\n股票代码：sz002594\n最新价格：91.45\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:16:58",
+                "time": "2026-02-26 09:16:58"
+            },
+            "today": null
+        },
+        "sh600096": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sh600096",
+                "name": "云天化",
+                "price": 43.3,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：云天化\n股票代码：sh600096\n最新价格：43.30\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:16:59",
+                "time": "2026-02-26 09:17:00"
+            },
+            "today": null
+        },
+        "sz300896": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sz300896",
+                "name": "爱美客",
+                "price": 145.69,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：爱美客\n股票代码：sz300896\n最新价格：145.69\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:17:01",
+                "time": "2026-02-26 09:17:02"
+            },
+            "today": null
+        },
+        "sh601020": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sh601020",
+                "name": "华钰矿业",
+                "price": 35.43,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：华钰矿业\n股票代码：sh601020\n最新价格：35.43\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:16:56",
+                "time": "2026-02-26 09:16:57"
+            },
+            "today": null
+        },
+        "sh603799": {
+            "yesterday": {
+                "type": "buy",
+                "code": "sh603799",
+                "name": "华友钴业",
+                "price": 77.47,
+                "condition": "拉升资金满足买入规则",
+                "content": "📈 买入提醒\n股票名称：华友钴业\n股票代码：sh603799\n最新价格：77.47\n触发条件：拉升资金满足买入规则\n提醒时间：2026-02-26 09:17:02",
+                "time": "2026-02-26 09:17:03"
+            },
+            "today": null
+        }
+    },
+    "lastUpdate": "2026-02-27 13:26:17"
+}

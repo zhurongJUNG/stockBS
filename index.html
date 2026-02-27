@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-panel .info {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .control-panel .info span {
+            color: #212529;
+            font-weight: 500;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        thead th {
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        thead th:first-child {
+            border-radius: 12px 0 0 0;
+        }
+
+        thead th:last-child {
+            border-radius: 0 12px 0 0;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #dee2e6;
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #e9ecef;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody td {
+            padding: 8px 5px;
+            font-size: 14px;
+        }
+
+        .stock-code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: 600;
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .stock-code:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        .stock-code.editing {
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            padding: 4px 8px;
+            outline: none;
+        }
+
+        .stock-name {
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .market-data {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .market-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .market-item .label {
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .market-item .value {
+            font-weight: 500;
+            color: #212529;
+            min-width: 60px;
+        }
+
+        .market-item .value.positive {
+            color: #dc3545;
+        }
+
+        .market-item .value.negative {
+            color: #28a745;
+        }
+
+        .email-record {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .email-item {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .email-item.yesterday {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .email-item.today {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .email-item.empty {
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-top: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .status-bar .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #6c757d;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.running {
+            background-color: #28a745;
+        }
+
+        .status-indicator.monitoring {
+            background-color: #ffc107;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .update-time {
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Email content modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #212529;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .modal-body {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #212529;
+        }
+
+        .modal-body p {
+            margin-bottom: 5px;
+        }
+
+        .email-type-buy {
+            color: #dc3545;
+        }
+
+        .email-type-sell {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>股票监控系统</h1>
+            <div class="subtitle">基于拉升资金与主力资金指标的智能交易提醒</div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="info">
+                监控股票数：<span id="stockCount">10</span> 只 |
+                最后更新：<span id="lastUpdate">--</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-warning" onclick="editStockCode()">
+                    <span>✎</span> 编辑股票代码
+                </button>
+                <button class="btn btn-success" onclick="refreshData()">
+                    <span>↻</span> 刷新数据
+                </button>
+                <button class="btn btn-primary" id="monitorBtn" onclick="startMonitor()">
+                    <span>▶</span> 启动监控
+                </button>
+            </div>
+        </div>
+
+        <!-- Stock Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="10%">股票代码</th>
+                        <th width="12%">股票名称</th>
+                        <th width="30%">市场数据</th>
+                        <th width="48%">邮件提醒记录</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span class="status-text" id="statusText">系统待机中</span>
+            </div>
+            <div class="update-time" id="dataUpdateTime">数据更新时间：--</div>
+        </div>
+    </div>
+
+    <!-- Email Content Modal -->
+    <div class="modal" id="emailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">邮件详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let isMonitoring = false;
+        let editMode = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStocks();
+        });
+
+        // Load stocks from backend
+        async function loadStocks() {
+            try {
+                const response = await fetch('/api/stocks');
+                const data = await response.json();
+                renderTable(data.stocks);
+                document.getElementById('stockCount').textContent = data.stocks.length;
+                document.getElementById('lastUpdate').textContent = data.lastUpdate || '--';
+                document.getElementById('dataUpdateTime').textContent = '数据更新时间：' + (data.lastUpdate || '--');
+            } catch (error) {
+                console.error('加载股票数据失败:', error);
+                showError('加载数据失败，请确保服务器已启动');
+            }
+        }
+
+        // Render table
+        function renderTable(stocks) {
+            const tbody = document.getElementById('stockTableBody');
+            tbody.innerHTML = '';
+
+            stocks.forEach((stock, index) => {
+                const tr = document.createElement('tr');
+
+                // Stock code (editable)
+                const codeTd = document.createElement('td');
+                const codeSpan = document.createElement('span');
+                codeSpan.className = 'stock-code';
+                codeSpan.textContent = stock.code;
+                codeSpan.dataset.index = index;
+                codeSpan.dataset.code = stock.code;
+                codeTd.appendChild(codeSpan);
+                tr.appendChild(codeTd);
+
+                // Stock name
+                const nameTd = document.createElement('td');
+                nameTd.className = 'stock-name';
+                nameTd.textContent = stock.name;
+                tr.appendChild(nameTd);
+
+                // Market data
+                const marketTd = document.createElement('td');
+                const marketDiv = document.createElement('div');
+                marketDiv.className = 'market-data';
+
+                // Price
+                const priceItem = document.createElement('div');
+                priceItem.className = 'market-item';
+                priceItem.innerHTML = `<span class="label">最新价</span><span class="value">${stock.price.toFixed(2)}</span>`;
+                marketDiv.appendChild(priceItem);
+
+                // Change
+                const changeItem = document.createElement('div');
+                changeItem.className = 'market-item';
+                const changeClass = stock.change >= 0 ? 'positive' : 'negative';
+                const changeSign = stock.change >= 0 ? '+' : '';
+                changeItem.innerHTML = `<span class="label">涨跌幅</span><span class="value ${changeClass}">${changeSign}${stock.change.toFixed(2)}%</span>`;
+                marketDiv.appendChild(changeItem);
+
+                // Turnover
+                const turnoverItem = document.createElement('div');
+                turnoverItem.className = 'market-item';
+                turnoverItem.innerHTML = `<span class="label">换手率</span><span class="value">${stock.turnover.toFixed(2)}%</span>`;
+                marketDiv.appendChild(turnoverItem);
+
+                marketTd.appendChild(marketDiv);
+                tr.appendChild(marketTd);
+
+                // Email record
+                const emailTd = document.createElement('td');
+                const emailDiv = document.createElement('div');
+                emailDiv.className = 'email-record';
+
+                const yesterdayEmail = document.createElement('span');
+                yesterdayEmail.className = 'email-item yesterday';
+                if (stock.emails && stock.emails.yesterday) {
+                    yesterdayEmail.textContent = `上一日: ${stock.emails.yesterday.type === 'buy' ? '📈' : '📉'} ${stock.emails.yesterday.type === 'buy' ? '买入' : '卖出'}`;
+                    yesterdayEmail.style.cursor = 'pointer';
+                    yesterdayEmail.onclick = () => showEmailDetail(stock.code, stock.emails.yesterday);
+                } else {
+                    yesterdayEmail.textContent = '上一日: 无邮件';
+                    yesterdayEmail.classList.add('empty');
+                }
+                emailDiv.appendChild(yesterdayEmail);
+
+                const todayEmail = document.createElement('span');
+                todayEmail.className = 'email-item today';
+                if (stock.emails && stock.emails.today) {
+                    todayEmail.textContent = `今日: ${stock.emails.today.type === 'buy' ? '📈' : '📉'} ${stock.emails.today.type === 'buy' ? '买入' : '卖出'}`;
+                    todayEmail.style.cursor = 'pointer';
+                    todayEmail.onclick = () => showEmailDetail(stock.code, stock.emails.today);
+                } else {
+                    todayEmail.textContent = '今日: 无邮件';
+                    todayEmail.classList.add('empty');
+                }
+                emailDiv.appendChild(todayEmail);
+
+                emailTd.appendChild(emailDiv);
+                tr.appendChild(emailTd);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Edit stock code
+        function editStockCode() {
+            if (editMode) {
+                saveStockCodes();
+            } else {
+                enableEditMode();
+            }
+        }
+
+        function enableEditMode() {
+            editMode = true;
+            const codes = document.querySelectorAll('.stock-code');
+            codes.forEach(codeSpan => {
+                codeSpan.contentEditable = true;
+                codeSpan.classList.add('editing');
+                codeSpan.focus();
+            });
+            document.querySelector('.btn-warning').innerHTML = '<span>💾</span> 保存修改';
+        }
+
+        async function saveStockCodes() {
+            const codes = document.querySelectorAll('.stock-code');
+            const newCodes = [];
+            codes.forEach(codeSpan => {
+                const newCode = codeSpan.textContent.trim();
+                newCodes.push({
+                    index: codeSpan.dataset.index,
+                    oldCode: codeSpan.dataset.code,
+                    newCode: newCode
+                });
+            });
+
+            try {
+                const response = await fetch('/api/stocks/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codes: newCodes })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    editMode = false;
+                    const codeSpans = document.querySelectorAll('.stock-code');
+                    codeSpans.forEach(span => {
+                        span.contentEditable = false;
+                        span.classList.remove('editing');
+                    });
+                    document.querySelector('.btn-warning').innerHTML = '<span>✎</span> 编辑股票代码';
+                    loadStocks();
+                    showMessage('股票代码已更新');
+                } else {
+                    showError('更新失败：' + result.message);
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                showError('保存失败，请重试');
+            }
+        }
+
+        // Refresh data
+        async function refreshData() {
+            const btn = document.querySelector('.btn-success');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> 刷新中...';
+
+            try {
+                const response = await fetch('/api/refresh', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    await loadStocks();
+                    showMessage('数据已刷新');
+                } else {
+                    showError('刷新失败：' + result.message);
+                }
+            } catch (error) {
+                console.error('刷新失败:', error);
+                showError('刷新失败，请重试');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>↻</span> 刷新数据';
+            }
+        }
+
+        // Start/Stop monitor
+        async function startMonitor() {
+            const btn = document.getElementById('monitorBtn');
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            if (isMonitoring) {
+                // Stop monitoring
+                try {
+                    const response = await fetch('/api/monitor/stop', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        isMonitoring = false;
+                        btn.innerHTML = '<span>▶</span> 启动监控';
+                        indicator.className = 'status-indicator';
+                        statusText.textContent = '系统待机中';
+                        showMessage('监控已停止');
+                    }
+                } catch (error) {
+                    console.error('停止监控失败:', error);
+                    showError('停止监控失败');
+                }
+            } else {
+                // Start monitoring
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> 启动中...';
+
+                try {
+                    const response = await fetch('/api/monitor/start', { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        isMonitoring = true;
+                        btn.innerHTML = '<span>⏸</span> 停止监控';
+                        indicator.className = 'status-indicator running';
+                        statusText.textContent = '监控运行中...';
+                        showMessage('监控已启动');
+
+                        // Start polling for updates
+                        startPolling();
+                    } else {
+                        showError('启动失败：' + result.message);
+                    }
+                } catch (error) {
+                    console.error('启动监控失败:', error);
+                    showError('启动监控失败');
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // Polling for updates
+        let pollInterval;
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    if (data.monitoring) {
+                        // Reload stocks to show any updates
+                        await loadStocks();
+
+                        // Check for new emails
+                        if (data.newEmails && data.newEmails.length > 0) {
+                            data.newEmails.forEach(email => {
+                                showEmailNotification(email);
+                            });
+                        }
+                    } else {
+                        // Monitoring stopped
+                        isMonitoring = false;
+                        document.getElementById('monitorBtn').innerHTML = '<span>▶</span> 启动监控';
+                        document.getElementById('statusIndicator').className = 'status-indicator';
+                        document.getElementById('statusText').textContent = '系统待机中';
+                        clearInterval(pollInterval);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        // Show email detail modal
+        function showEmailDetail(stockCode, emailData) {
+            const modal = document.getElementById('emailModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+
+            title.textContent = `${stockCode} - 邮件详情`;
+
+            const typeClass = emailData.type === 'buy' ? 'email-type-buy' : 'email-type-sell';
+            const typeText = emailData.type === 'buy' ? '买入提醒' : '卖出提醒';
+            const icon = emailData.type === 'buy' ? '📈' : '📉';
+
+            body.innerHTML = `
+                <p class="${typeClass}"><strong>${icon} ${typeText}</strong></p>
+                <p><strong>股票代码：</strong>${emailData.code}</p>
+                <p><strong>最新价格：</strong>${emailData.price.toFixed(2)}</p>
+                <p><strong>触发条件：</strong>${emailData.condition}</p>
+                <p><strong>发送时间：</strong>${emailData.time}</p>
+                <p><strong>邮件内容：</strong></p>
+                <p style="background: #f8f9fa; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${emailData.content}</p>
+            `;
+
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('emailModal').classList.remove('show');
+        }
+
+        // Show email notification
+        function showEmailNotification(email) {
+            const typeText = email.type === 'buy' ? '买入' : '卖出';
+            const icon = email.type === 'buy' ? '📈' : '📉';
+            showMessage(`${icon} ${email.code} ${typeText}提醒已发送！`);
+        }
+
+        // Utility functions
+        function showMessage(msg) {
+            const statusText = document.getElementById('statusText');
+            const originalText = statusText.textContent;
+            statusText.textContent = msg;
+            statusText.style.color = '#28a745';
+            setTimeout(() => {
+                statusText.textContent = originalText;
+                statusText.style.color = '#6c757d';
+            }, 3000);
+        }
+
+        function showError(msg) {
+            const statusText = document.getElementById('statusText');
+            const originalText = statusText.textContent;
+            statusText.textContent = msg;
+            statusText.style.color = '#dc3545';
+            setTimeout(() => {
+                statusText.textContent = originalText;
+                statusText.style.color = '#6c757d';
+            }, 3000);
+        }
+
+        // Close modal on outside click
+        document.getElementById('emailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Auto-refresh on page load
+        setTimeout(() => {
+            refreshData();
+        }, 1000);
+    </script>
+</body>
+</html>
