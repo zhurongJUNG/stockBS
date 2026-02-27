@@ -146,10 +146,15 @@ def clean_old_email_records():
         print(f"清理旧记录失败: {e}")
 
 def to_standard_code(stock_code):
-    """将带后缀的代码转换为标准6位代码"""
-    if '.' in stock_code:
-        return stock_code.split('.')[0]
-    return stock_code
+    """将股票代码转换为标准6位代码（处理后缀.SH/.SZ和前缀sh/sz/bj）"""
+    code = stock_code
+    # 处理后缀格式（如 000636.SZ）
+    if '.' in code:
+        code = code.split('.')[0]
+    # 处理前缀格式（如 sz000636, sh600000, bj830799）
+    if len(code) > 6 and code[:2].lower() in ['sh', 'sz', 'bj']:
+        code = code[2:]
+    return code
 
 def to_akshare_code(stock_code):
     """将6位代码转换为 AkShare 需要的格式"""
