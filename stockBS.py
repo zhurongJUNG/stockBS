@@ -443,9 +443,31 @@ def _get_eastmoney_hist_data(stock_code, time_module):
                 # 计算涨跌幅
                 change_pct = ((price - prev_price) / prev_price) * 100
 
-                # tushare的换手率需要单独获取（或使用pct_chg字段）
-                # 暂时返回0，换手率可从其他数据源获取
+                # 尝试从tushare daily_basic接口获取换手率
                 turnover = 0.0
+                try:
+                    latest_date = str(latest['trade_date'])
+                    basic_df = pro.daily_basic(ts_code=ts_code, trade_date=latest_date, fields='turnover_rate')
+                    if not basic_df.empty and 'turnover_rate' in basic_df.columns:
+                        turnover_val = basic_df.iloc[0]['turnover_rate']
+                        if not pd.isna(turnover_val):
+                            turnover = float(turnover_val)
+                            print(f"  Tushare获取换手率成功: {turnover:.2f}%")
+                except Exception as e:
+                    print(f"  Tushare获取换手率失败，尝试从AkShare获取: {str(e)[:50]}")
+                    # 尝试从AkShare获取换手率
+                    try:
+                        ak_code = to_akshare_code(standard_code)
+                        # 使用akshare获取历史数据（包含换手率）
+                        hist_ak = ak.stock_zh_a_hist(symbol=standard_code, period="daily", adjust="qfq")
+                        if hist_ak is not None and not hist_ak.empty:
+                            # 获取最新一天的换手率
+                            latest_ak = hist_ak.iloc[-1]
+                            if '换手率' in latest_ak:
+                                turnover = float(latest_ak['换手率'])
+                                print(f"  AkShare获取换手率成功: {turnover:.2f}%")
+                    except Exception as e2:
+                        print(f"  AkShare获取换手率也失败: {str(e2)[:50]}")
 
                 return price, change_pct, turnover
             else:
