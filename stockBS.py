@@ -33,26 +33,57 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STOCKS_FILE = os.path.join(BASE_DIR, "stocks.json")
 EMAIL_FILE = os.path.join(BASE_DIR, "email.json")
 SENT_EMAILS_FILE = os.path.join(BASE_DIR, "sent_emails.json")
+STOCK_NAMES_CACHE_FILE = os.path.join(BASE_DIR, "stock_names.json")
 
 # 全局股票名称缓存
 _stock_name_cache = None
 
 def get_stock_name_cache():
-    """获取股票名称缓存"""
+    """获取股票名称缓存 - 优先从本地JSON加载，失败时才调用API"""
     global _stock_name_cache
     if _stock_name_cache is None:
+        # 1. 首先尝试从本地JSON文件加载
         try:
-            print(f"正在加载股票名称缓存...")
+            if os.path.exists(STOCK_NAMES_CACHE_FILE):
+                print(f"正在从本地文件加载股票名称缓存...")
+                with open(STOCK_NAMES_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                if cache_data and 'stocks' in cache_data and len(cache_data['stocks']) > 0:
+                    _stock_name_cache = pd.DataFrame(cache_data['stocks'])
+                    print(f"本地股票名称缓存加载成功，共 {len(_stock_name_cache)} 只股票 (更新时间: {cache_data.get('lastUpdate', '未知')})")
+                    return _stock_name_cache
+        except Exception as e:
+            print(f"从本地加载股票名称缓存失败: {e}")
+
+        # 2. 本地加载失败，尝试从API获取
+        try:
+            print(f"正在从API加载股票名称缓存...")
             _stock_name_cache = ak.stock_info_a_code_name()
             if _stock_name_cache is not None and not _stock_name_cache.empty:
-                print(f"股票名称缓存加载成功，共 {len(_stock_name_cache)} 只股票")
+                print(f"API股票名称缓存加载成功，共 {len(_stock_name_cache)} 只股票")
+                # 保存到本地JSON文件
+                save_stock_name_cache_to_file(_stock_name_cache)
             else:
-                print(f"股票名称缓存为空，将重新加载")
-                _stock_name_cache = None
+                print(f"股票名称缓存为空，将使用空缓存")
+                _stock_name_cache = pd.DataFrame(columns=['code', 'name'])
         except Exception as e:
-            print(f"加载股票名称缓存失败: {e}")
+            print(f"从API加载股票名称缓存失败: {e}")
             _stock_name_cache = pd.DataFrame(columns=['code', 'name'])
     return _stock_name_cache
+
+def save_stock_name_cache_to_file(cache_df):
+    """将股票名称缓存保存到本地JSON文件"""
+    try:
+        cache_data = {
+            "stocks": cache_df.to_dict('records'),
+            "lastUpdate": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "count": len(cache_df)
+        }
+        with open(STOCK_NAMES_CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        print(f"股票名称缓存已保存到本地文件，共 {len(cache_df)} 只股票")
+    except Exception as e:
+        print(f"保存股票名称缓存失败: {e}")
 
 # 初始化 Flask
 app = Flask(__name__)
@@ -168,7 +199,8 @@ def to_akshare_code(stock_code):
     return stock_code
 
 def get_stock_name(stock_code):
-    """获取股票名称 - 使用 AkShare"""
+    """获取股票名称 - 优先从缓存获取，缓存未命中时从API获取并更新缓存"""
+    global _stock_name_cache
     try:
         # 转换为标准6位代码
         standard_code = to_standard_code(stock_code)
@@ -177,20 +209,47 @@ def get_stock_name(stock_code):
         cache_df = get_stock_name_cache()
 
         if cache_df is None or cache_df.empty:
-            print(f"股票名称缓存为空")
-            return stock_code
+            print(f"股票名称缓存为空，尝试从API获取单个股票名称")
+            return fetch_and_update_single_stock_name(standard_code)
 
         # 在缓存中查找股票名称
-        # stock_info_a_code_name 返回的DataFrame包含 'code' 和 'name' 列
         stock_row = cache_df[cache_df['code'] == standard_code]
 
         if not stock_row.empty:
             return stock_row.iloc[0]['name']
         else:
-            print(f"未找到股票 {standard_code} 的名称")
-            return stock_code
+            # 缓存中未找到，尝试从API获取并更新缓存
+            print(f"缓存中未找到股票 {standard_code}，尝试从API获取")
+            return fetch_and_update_single_stock_name(standard_code)
     except Exception as e:
         print(f"获取股票名称失败 {stock_code}: {e}")
+        return stock_code
+
+def fetch_and_update_single_stock_name(stock_code):
+    """从API获取单个股票名称并更新缓存"""
+    global _stock_name_cache
+    try:
+        # 尝试从AkShare获取全部股票列表（这是获取单个股票名称的可靠方式）
+        print(f"正在从API获取股票 {stock_code} 的名称...")
+        new_cache = ak.stock_info_a_code_name()
+
+        if new_cache is not None and not new_cache.empty:
+            # 更新全局缓存
+            _stock_name_cache = new_cache
+            # 保存到本地JSON文件
+            save_stock_name_cache_to_file(new_cache)
+
+            # 查找目标股票
+            stock_row = new_cache[new_cache['code'] == stock_code]
+            if not stock_row.empty:
+                name = stock_row.iloc[0]['name']
+                print(f"成功获取股票名称: {stock_code} -> {name}")
+                return name
+
+        print(f"API中也未找到股票 {stock_code} 的名称")
+        return stock_code
+    except Exception as e:
+        print(f"从API获取股票名称失败 {stock_code}: {e}")
         return stock_code
 
 
