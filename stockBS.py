@@ -123,33 +123,77 @@ def get_today_date():
     """获取今天的日期字符串"""
     return datetime.now().strftime('%Y-%m-%d')
 
-def has_email_sent_today(stock_code):
-    """检查某股票今日是否已发送邮件"""
+def get_current_price_period():
+    """
+    判断当前应该分析哪个时段的收盘价数据
+    返回: "yesterday" 或 "today"
+
+    规则:
+    - 15:00后: 返回 "today" (今日收盘价已确定)
+    - 15:00前(包括交易时间9:30-15:00): 返回 "yesterday" (使用昨日收盘价)
+    """
+    now = time.localtime()
+    current_time = now.tm_hour * 100 + now.tm_min
+
+    if current_time >= 1500:
+        # 15:00后，今日收盘价已确定
+        return "today"
+    else:
+        # 15:00前，使用昨日收盘价
+        return "yesterday"
+
+def has_email_sent_for_period(stock_code, period=None):
+    """
+    检查某股票在指定时段是否已发送邮件
+    period: "yesterday" 或 "today"，如果为None则自动判断当前时段
+    """
+    if period is None:
+        period = get_current_price_period()
+
     try:
-        sent_data = load_json_file(SENT_EMAILS_FILE, {"dates": {}})
-        today = get_today_date()
-        if today in sent_data["dates"]:
-            sent_stocks = sent_data["dates"][today]
-            return stock_code in sent_stocks
+        # 检查 email.json 中的记录
+        email_data = load_json_file(EMAIL_FILE, {"emails": {}})
+        standard_code = to_standard_code(stock_code)
+
+        if standard_code in email_data["emails"]:
+            record = email_data["emails"][standard_code].get(period)
+            if record is not None:
+                period_name = "昨日" if period == "yesterday" else "今日"
+                print(f"{period_name}已发送过 {stock_code} 的邮件，跳过")
+                return True
         return False
     except Exception as e:
         print(f"检查邮件记录失败: {e}")
         return False
 
-def record_email_sent(stock_code):
-    """记录某股票今日已发送邮件"""
+def record_email_sent_for_period(stock_code, period=None):
+    """
+    记录某股票在指定时段已发送邮件
+    period: "yesterday" 或 "today"，如果为None则自动判断当前时段
+    """
+    if period is None:
+        period = get_current_price_period()
+
     try:
         sent_data = load_json_file(SENT_EMAILS_FILE, {"dates": {}})
-        today = get_today_date()
 
-        if today not in sent_data["dates"]:
-            sent_data["dates"][today] = []
+        # 根据时段确定日期
+        if period == "today":
+            target_date = get_today_date()
+        else:
+            # yesterday - 使用昨天的日期
+            target_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
 
-        if stock_code not in sent_data["dates"][today]:
-            sent_data["dates"][today].append(stock_code)
+        if target_date not in sent_data["dates"]:
+            sent_data["dates"][target_date] = []
+
+        standard_code = to_standard_code(stock_code)
+        if standard_code not in sent_data["dates"][target_date]:
+            sent_data["dates"][target_date].append(standard_code)
 
         save_json_file(SENT_EMAILS_FILE, sent_data)
-        print(f"记录邮件发送: {stock_code} - {today}")
+        period_name = "昨日" if period == "yesterday" else "今日"
+        print(f"记录邮件发送: {stock_code} - {target_date} ({period_name})")
     except Exception as e:
         print(f"记录邮件发送失败: {e}")
 
@@ -644,8 +688,14 @@ def check_and_reset_daily_emails():
     except Exception as e:
         print(f"重置每日邮件记录失败: {e}")
 
-def save_email_record(stock_code, stock_name, signal_type, price, condition, content):
-    """保存邮件记录到 email.json"""
+def save_email_record(stock_code, stock_name, signal_type, price, condition, content, period=None):
+    """
+    保存邮件记录到 email.json
+    period: "yesterday" 或 "today"，如果为None则自动判断当前时段
+    """
+    if period is None:
+        period = get_current_price_period()
+
     email_data = load_json_file(EMAIL_FILE, {"emails": {}, "lastUpdate": ""})
 
     # 使用不带后缀的6位代码作为key
@@ -654,23 +704,33 @@ def save_email_record(stock_code, stock_name, signal_type, price, condition, con
     if standard_code not in email_data["emails"]:
         email_data["emails"][standard_code] = {"yesterday": None, "today": None}
 
-    # 添加今日新邮件（不自动移动yesterday，由check_and_reset_daily_emails处理）
-    email_data["emails"][standard_code]["today"] = {
+    # 根据时段保存到对应字段
+    record = {
         "type": signal_type,
         "code": stock_code,
         "name": stock_name,
         "price": price,
         "condition": condition,
         "content": content,
-        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "period": period  # 记录是基于哪个时段的收盘价
     }
+
+    email_data["emails"][standard_code][period] = record
 
     email_data["lastUpdate"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     save_json_file(EMAIL_FILE, email_data)
 
+    period_name = "昨日" if period == "yesterday" else "今日"
+    print(f"邮件记录已保存: {stock_code} ({period_name}收盘价)")
+
 def send_email_alert(signal_type, stock_code, stock_name, price):
-    """发送邮件提醒"""
-    subject = f"股票交易提醒 - {stock_name}({stock_code})"
+    """发送邮件提醒 - 根据当前时段判断使用昨日/今日收盘价"""
+    # 获取当前时段
+    period = get_current_price_period()
+    period_name = "昨日" if period == "yesterday" else "今日"
+
+    subject = f"股票交易提醒 - {stock_name}({stock_code}) [{period_name}收盘价]"
 
     if signal_type == "buy":
         condition = "拉升资金满足买入规则"
@@ -680,6 +740,7 @@ def send_email_alert(signal_type, stock_code, stock_name, price):
             f"股票代码：{stock_code}",
             f"最新价格：{price:.2f}",
             f"触发条件：{condition}",
+            f"数据来源：{period_name}收盘价",
             f"提醒时间：{time.strftime('%Y-%m-%d %H:%M:%S')}"
         ]
     elif signal_type == "sell":
@@ -690,6 +751,7 @@ def send_email_alert(signal_type, stock_code, stock_name, price):
             f"股票代码：{stock_code}",
             f"最新价格：{price:.2f}",
             f"触发条件：{condition}",
+            f"数据来源：{period_name}收盘价",
             f"提醒时间：{time.strftime('%Y-%m-%d %H:%M:%S')}"
         ]
     else:
@@ -697,21 +759,20 @@ def send_email_alert(signal_type, stock_code, stock_name, price):
 
     content = "\n".join(content_lines)
 
-    # 检查是否今日已发送过该股票的邮件
+    # 检查当前时段是否已发送过该股票的邮件
     standard_code = to_standard_code(stock_code)
-    if has_email_sent_today(standard_code):
-        print(f"今日已发送过 {stock_code}({stock_name}) 的邮件，跳过")
+    if has_email_sent_for_period(standard_code, period):
         return False
 
     try:
         yag.send(to=EMAIL_TO, subject=subject, contents=content)
         print(f"邮件已发送：{subject}")
 
-        # 记录今日已发送
-        record_email_sent(standard_code)
+        # 记录该时段已发送
+        record_email_sent_for_period(standard_code, period)
 
         # 保存邮件记录
-        save_email_record(stock_code, stock_name, signal_type, price, condition, content)
+        save_email_record(stock_code, stock_name, signal_type, price, condition, content, period)
         return True
     except Exception as e:
         print(f"邮件发送失败：{e}")
